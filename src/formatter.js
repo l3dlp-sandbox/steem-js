@@ -155,7 +155,7 @@ module.exports = steemAPI => {
   }
 
   return {
-    reputation: function(reputation) {
+    reputation: function(reputation, decimal_places = 0) {
       if (reputation == 0) return 25;
       if (!reputation) return reputation;      
       let neg = reputation < 0;
@@ -163,7 +163,11 @@ module.exports = steemAPI => {
       rep = neg ? rep.substring(1) : rep;
       let v = (Math.log10((rep > 0 ? rep : -rep) - 10) - 9);
       v =  neg ? -v : v;
-      return parseInt(v * 9 + 25);
+      v = v * 9 + 25;
+      if (decimal_places > 0) {
+        return +(Math.round(v + "e+" + decimal_places) + "e-" + decimal_places);
+      }
+      return parseInt(v);
     },
 
     vestToSteem: function(
@@ -183,7 +187,15 @@ module.exports = steemAPI => {
         .replace(/[^a-zA-Z0-9]+/g, "")
         .toLowerCase();
       parentPermlink = parentPermlink.replace(/(-\d{8}t\d{9}z)/g, "");
-      return "re-" + parentAuthor + "-" + parentPermlink + "-" + timeStr;
+      let permLink =
+        "re-" + parentAuthor + "-" + parentPermlink + "-" + timeStr;
+      if (permLink.length > 255) {
+        // pay respect to STEEMIT_MAX_PERMLINK_LENGTH
+        permLink.substr(permLink.length - 255, permLink.length);
+      }
+      // permlinks must be lower case and not contain anything but
+      // alphanumeric characters plus dashes
+      return permLink.toLowerCase().replace(/[^a-z0-9-]+/g, "");
     },
 
     amount: function(amount, asset) {
